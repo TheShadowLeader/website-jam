@@ -1,0 +1,14 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "website-jam",
+  "description": "One command for any website or landing-page build — detects project state and routes to init, compose, QA, or handoff automatically.",
+  "owner": { "name": "The Shadow Legacy", "url": "https://theshadowlegacy.com" },
+  "plugins": [
+    {
+      "name": "website-jam",
+      "description": "Single umbrella skill for website/landing-page projects: state-detection routing, a mandatory real-browser QA gate, and baked-in motion-quality rules.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

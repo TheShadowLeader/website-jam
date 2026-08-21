@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Website Jam — Mission Control</title>
+<meta name="description" content="Mission Control for website-jam — build the prompt for every phase of a website project, from research to handoff.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  /* boot the theme before first paint — no flash */
+  (function(){try{var t=localStorage.getItem('tsl-theme')||'system';
+    var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme:dark)').matches);
+    if(d)document.documentElement.classList.add('dark');}catch(e){}})();
+</script>
+<style>
+  /* ── brand literals — these never swap ─────────────────────────── */
+  :root{
+    --midnight:#003840; --midnight-deep:#01191D;
+    --moonmist:#E0DBC6; --moonmist-bright:#F2F0E8; --moonmist-deep:#EAE6D6;
+    --sunrise:#E2604A;
+
+    --r-card:24px; --r-tile:16px; --r-field:8px; --pill:999px;
+    --display:"Jost","Futura PT",Futura,"Century Gothic",sans-serif;
+    --body:Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+
+    /* ── role tokens · LIGHT face (default) ──────────────────────── */
+    --bg:var(--moonmist);
+    --surface:var(--moonmist-bright);
+    --surface-2:var(--moonmist-deep);
+    --ink:var(--midnight);
+    --ink-2:rgba(0,56,64,.74);
+    --ink-3:rgba(0,56,64,.60);
+    --line:rgba(0,56,64,.14);
+    --line-hi:rgba(0,56,64,.30);
+    --field:rgba(0,56,64,.05);
+    --field-line:rgba(0,56,64,.22);
+    --dir:#9E3823;             /* sunrise is 2.5:1 on moonmist — deepen it for text */
+    --ring:rgba(0,56,64,.55);
+    --shadow:0 10px 24px rgba(1,25,29,.10);
+    --ok:#3F6B52; --ext:#3C6076; --pro:#8A6A2F;
+  }
+  /* ── role tokens · DARK face — green-deep base, midnight cards lifting off it ── */
+  .dark{
+    --bg:var(--midnight-deep);
+    --surface:var(--midnight);
+    --surface-2:#04252C;
+    --ink:var(--moonmist);
+    --ink-2:rgba(224,219,198,.66);
+    --ink-3:rgba(224,219,198,.50);
+    --line:rgba(224,219,198,.14);
+    --line-hi:rgba(224,219,198,.26);
+    --field:rgba(1,25,29,.32);
+    --field-line:rgba(1,25,29,.55);
+    --dir:#F08A76;              /* sunrise is 3.66:1 on midnight — lift it for small text */
+    --ring:var(--sunrise);
+    --shadow:0 10px 24px rgba(1,25,29,.28);
+    --ok:#8FBBA0; --ext:#8FB2C6; --pro:#D6B47C;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);
+    -webkit-font-smoothing:antialiased;line-height:1.6;
+    transition:background .3s ease,color .3s ease}
+  a{color:inherit}
+  .mono{font-family:var(--mono)}
+  ::selection{background:var(--sunrise);color:var(--moonmist-bright)}
+  ::placeholder{color:var(--ink-3);opacity:1}
+
+  input,select,textarea{font-family:var(--body);font-size:15px;color:var(--ink);
+    background:var(--field);border:1px solid var(--field-line);border-radius:var(--r-field);
+    padding:10px 13px;outline:none;transition:border-color .18s,background .18s;width:100%}
+  input:focus,select:focus,textarea:focus{border-color:var(--ring);
+    outline:2px solid var(--ring);outline-offset:0;box-shadow:0 0 0 4px var(--bg)}
+  select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),
+    linear-gradient(135deg,currentColor 50%,transparent 50%);
+    background-position:calc(100% - 17px) calc(50% + 1px),calc(100% - 12px) calc(50% + 1px);
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:34px}
+  label{display:block;font-family:var(--display);font-size:11.5px;font-weight:500;
+    letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin:0 0 7px}
+
+  /* ── header ───────────────────────────────────────────────────── */
+  header{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);
+    backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .bar{max-width:1180px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+  .mark{width:26px;height:27px;flex:0 0 auto;color:var(--sunrise)}
+  .mark svg{width:100%;height:100%;display:block}
+  .bar h1{font-family:var(--display);font-size:17px;font-weight:500;margin:0;letter-spacing:-.02em;white-space:nowrap}
+  .bar h1 .stop{color:var(--sunrise)}
+  .bar .sub{font-family:var(--display);font-size:11px;font-weight:500;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--ink-3)}
+  .bar nav{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .navlink{font-family:var(--display);font-size:12.5px;font-weight:500;color:var(--ink-2);
+    border:1px solid var(--line);border-radius:var(--pill);padding:7px 15px;
+    text-decoration:none;transition:.16s;background:transparent;white-space:nowrap}
+  .navlink:hover{color:var(--ink);border-color:var(--line-hi)}
+  .navlink.hot{color:var(--dir);border-color:color-mix(in srgb,var(--sunrise) 50%,transparent);
+    background:color-mix(in srgb,var(--sunrise) 8%,transparent)}
+
+  /* theme pill — 3 segments, matches the site */
+  .theme{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:var(--pill);flex:none}
+  .theme button{width:30px;height:26px;border:0;border-radius:var(--pill);background:transparent;
+    color:var(--ink-3);display:grid;place-items:center;cursor:pointer;transition:.16s}
+  .theme button:hover{color:var(--ink)}
+  .theme button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+  .theme svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round}
+
+  main{max-width:1180px;margin:0 auto;padding:36px 24px 96px}
+
+  /* ── project panel ────────────────────────────────────────────── */
+  .project{background:var(--surface);border:1px solid var(--line);border-radius:28px;
+    padding:26px 28px;margin-bottom:44px;box-shadow:var(--shadow)}
+  .project .head{display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .project .head h2{font-family:var(--display);margin:0;font-size:19px;font-weight:500;letter-spacing:-.03em}
+  .project .head h2 .stop{color:var(--sunrise)}
+  .project .head span{font-size:13.5px;color:var(--ink-3)}
+  .project .head .ghost{margin-left:auto}
+  .fields{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+  .f-name,.f-niche{grid-column:span 2}
+  @media(max-width:860px){.fields{grid-template-columns:repeat(2,1fr)}.f-name,.f-niche{grid-column:span 2}}
+
+  /* ── phases ───────────────────────────────────────────────────── */
+  .phase{margin-bottom:16px}
+  .ph-open{display:flex;align-items:center;gap:14px;margin:0 0 10px;padding-top:4px}
+  .ph-open .rule{height:1px;flex:1;background:var(--line)}
+  .ph-eyebrow{font-family:var(--display);font-size:12.5px;font-weight:500;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+  .ph-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);
+    padding:26px 28px;box-shadow:var(--shadow);transition:border-color .18s}
+  .ph-card:hover{border-color:var(--line-hi)}
+  .ph-top{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
+  .ph-top h3{font-family:var(--display);margin:0;font-size:23px;font-weight:400;letter-spacing:-.03em}
+  .ph-top h3 .stop{color:var(--sunrise)}
+  .ph-tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    padding:4px 10px;border-radius:var(--pill);border:1px solid var(--line-hi);color:var(--ink-3)}
+  .ph-tag.acc{color:var(--dir);border-color:color-mix(in srgb,var(--sunrise) 45%,transparent)}
+  .ph-tag.auto{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+  .ph-what{font-size:15.5px;color:var(--ink-2);margin:11px 0 0;max-width:72ch;line-height:1.65}
+  .ph-what b{color:var(--ink);font-weight:400}
+  .ph-what a{color:var(--dir);text-underline-offset:3px}
+  .ph-body{margin-top:20px;display:flex;flex-direction:column;gap:14px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:700px){.row{grid-template-columns:1fr}}
+  .check{display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--ink-2);cursor:pointer;user-select:none}
+  .check input{width:auto;accent-color:var(--sunrise)}
+  .check b{color:var(--ink);font-weight:400}
+  .list{display:flex;flex-direction:column;gap:9px}
+  .list .li{display:flex;gap:9px;align-items:center}
+  .list .li input{flex:1;min-width:0}
+  .rm{background:transparent;color:var(--ink-3);border:1px solid var(--line);border-radius:var(--r-field);
+    width:34px;height:38px;font-size:15px;flex:0 0 auto;line-height:1;cursor:pointer;transition:.16s}
+  .rm:hover{color:var(--ink);border-color:var(--line-hi)}
+  .add{align-self:flex-start;background:transparent;color:var(--ink-3);
+    border:1px dashed var(--line-hi);border-radius:var(--pill);padding:7px 15px;
+    font-family:var(--display);font-size:12.5px;font-weight:500;cursor:pointer;transition:.16s}
+  .add:hover{color:var(--dir);border-color:color-mix(in srgb,var(--sunrise) 50%,transparent)}
+
+  .prompt{background:var(--field);border:1px solid var(--field-line);border-radius:var(--r-tile);
+    padding:15px 16px;font-family:var(--mono);font-size:12.5px;line-height:1.68;color:var(--ink-2);
+    white-space:pre-wrap;word-break:break-word;min-height:22px}
+  .p-actions{display:flex;gap:11px;align-items:center;flex-wrap:wrap}
+  button{font-family:var(--display);cursor:pointer;transition:.16s}
+
+  /* copy = the brand HoverButton: parked dot floods the pill on hover */
+  .copy{position:relative;overflow:hidden;isolation:isolate;
+    background:transparent;border:1px solid var(--sunrise);border-radius:var(--pill);
+    color:var(--ink);padding:10px 20px 10px 36px;font-size:13px;font-weight:500;letter-spacing:.01em}
+  .copy .dot{position:absolute;left:15px;top:50%;width:8px;height:8px;margin-top:-4px;
+    border-radius:50%;background:var(--sunrise);z-index:-1;
+    transition:transform .44s cubic-bezier(.65,0,.35,1)}
+  .copy .txt{transition:color .28s ease}
+  .copy:hover .dot,.copy:focus-visible .dot{transform:scale(70)}
+  .copy:hover .txt,.copy:focus-visible .txt{color:var(--midnight)}
+  .copy:active{transform:scale(.97)}
+  .copy.ok{border-color:var(--ok)}
+  .copy.ok .dot{background:var(--ok)}
+  .ghost{background:transparent;color:var(--ink-2);border:1px solid var(--line);
+    border-radius:var(--pill);padding:9px 16px;font-size:12.5px;font-weight:500}
+  .ghost:hover{color:var(--ink);border-color:var(--line-hi)}
+  .hint{font-size:13.5px;color:var(--ink-3);max-width:62ch}
+  .hint a{color:var(--ink-2)}
+  .hint a:hover{color:var(--dir)}
+
+  /* ── library shelf ────────────────────────────────────────────── */
+  .libs{margin-top:56px}
+  .libs h2{font-family:var(--display);font-size:23px;font-weight:400;letter-spacing:-.03em;margin:0 0 5px}
+  .libs h2 .stop{color:var(--sunrise)}
+  .libs .sub{font-size:14.5px;color:var(--ink-3);margin:0 0 20px}
+  .libgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:860px){.libgrid{grid-template-columns:1fr}}
+  .lib{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);
+    padding:20px 22px;text-decoration:none;display:block;box-shadow:var(--shadow);transition:.18s}
+  .lib .name{font-family:var(--display);font-size:15.5px;font-weight:500;letter-spacing:-.01em;
+    display:flex;align-items:center;gap:9px}
+  .lib .name .dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+  .lib p{font-size:14px;color:var(--ink-2);margin:9px 0 0;line-height:1.6}
+  .lib p a{color:var(--dir)}
+  .lib .role{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-3);margin-top:12px}
+  .lib.pending{border-style:dashed;box-shadow:none}
+  @media(hover:hover) and (pointer:fine){
+    a.lib:hover{border-color:var(--line-hi);transform:translateY(-2px)}
+  }
+
+  /* ── hard rules footer ────────────────────────────────────────── */
+  .rules{margin-top:56px;border-top:1px solid var(--line);padding-top:22px;
+    display:flex;gap:10px 18px;flex-wrap:wrap;align-items:baseline}
+  .rules span{font-size:13.5px;color:var(--ink-3)}
+  .rules b{font-family:var(--display);font-weight:500;color:var(--ink);letter-spacing:.02em}
+  .rules .sep{color:var(--line-hi)}
+  .colophon{margin-top:26px;font-size:13px;color:var(--ink-3)}
+  .colophon a{color:var(--ink-2);text-underline-offset:3px}
+  .colophon a:hover{color:var(--dir)}
+  .colophon .stop{color:var(--sunrise)}
+
+  @media(max-width:640px){
+    .bar{padding:14px 20px;gap:10px;flex-wrap:nowrap}
+    .bar .sub{display:none}
+    .bar nav{width:100%;margin-left:0;order:3}
+    .theme{margin-left:auto}
+    main{padding:28px 20px 72px}
+    .project,.ph-card{padding:22px 20px}
+    .ph-top h3{font-size:20px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+    .copy .dot{transition:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <span class="mark" aria-hidden="true">
+      <svg viewBox="0 0 47.7946 50.0217" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <path d="M25.2119 3.29806C27.7641 3.29806 30.3018 4.16063 32.3709 5.81328C36.401 9.0316 40.8277 13.7649 43.2212 18.2952C44.1585 20.0638 44.591 22.0644 44.5189 24.0649C44.3459 28.9359 43.6033 34.452 41.3251 39.236C39.9769 42.0702 37.5401 44.2665 34.5626 45.2232C31.4986 46.209 27.6631 46.7164 23.8205 46.7164C20.8069 46.7164 17.7933 46.4048 15.1474 45.7669C11.8599 44.9768 9.08424 42.7733 7.57745 39.7362C5.55879 35.6698 4.06642 30.2696 3.39594 25.6814C2.97058 22.753 3.6699 19.7811 5.3353 17.3529C8.60841 12.5761 14.3832 7.00203 20.6627 4.24036C22.119 3.59524 23.6691 3.28356 25.2119 3.28356M25.2119 0C23.1788 0 21.2106 0.413163 19.3578 1.23224C12.0329 4.46506 5.91927 10.7205 2.63894 15.4972C0.490512 18.6358 -0.389047 22.4268 0.158875 26.1743C0.937501 31.5019 2.61731 37.1267 4.65039 41.2221C6.59696 45.1363 10.144 47.9632 14.3904 48.9852C17.2166 49.6593 20.4752 50.0217 23.8205 50.0217C28.0957 50.0217 32.2628 49.4346 35.5647 48.3691C39.3569 47.1441 42.5291 44.3389 44.2738 40.6712C46.4006 36.1989 47.5469 30.8133 47.7848 24.1954C47.8786 21.586 47.2946 19.02 46.105 16.7657C43.7187 12.2572 39.3425 7.20499 34.404 3.24732C31.8014 1.167 28.5355 0.0217454 25.2119 0.0217454V0Z" fill="currentColor"/>
+        <path d="M28.0452 37.5979C27.9587 37.5979 27.8794 37.5979 27.7929 37.5834C20.778 36.757 19.7687 35.1479 19.3866 34.5462C17.9375 32.2412 15.8756 25.0725 16.82 21.8687C18.6945 15.5045 25.7814 12.7283 28.7229 12.4384C29.4367 12.3659 30.1288 12.6341 30.619 13.1705C31.102 13.6996 31.3111 14.4317 31.1814 15.1348C31.0083 16.0699 30.6262 17.3963 30.1864 18.933C29.1699 22.4775 27.7785 27.334 28.002 30.6393C28.0164 30.8205 28.1966 31.6251 29.8548 34.3505C30.2802 35.0536 30.273 35.9235 29.8332 36.6121C29.4367 37.2354 28.7734 37.5979 28.0524 37.5979H28.0452ZM27.6126 16.0046C24.9379 16.802 21.0448 19.0852 19.9562 22.7965C19.4082 24.6593 20.8862 30.7698 22.1551 32.7849C22.3209 32.9733 23.3302 33.5097 25.8752 33.9736C25.1398 32.5819 24.8009 31.6179 24.7433 30.8568C24.4765 26.9716 25.9689 21.7962 27.0503 18.0125C27.2594 17.2804 27.454 16.599 27.6199 15.9974L27.6126 16.0046Z" fill="currentColor"/>
+      </svg>
+    </span>
+    <h1>Website Jam<span class="stop">.</span></h1>
+    <span class="sub">mission control</span>
+    <nav>
+      <a class="navlink hot" data-nav="library" href="#" target="_blank" rel="noopener">Component library ↗</a>
+      <a class="navlink" data-nav="templates" href="#" target="_blank" rel="noopener">★ Site templates ↗</a>
+      <a class="navlink" href="https://21st.dev" target="_blank" rel="noopener">21st.dev ↗</a>
+      <a class="navlink" href="https://osmo.supply" target="_blank" rel="noopener">Osmo ↗</a>
+      <a class="navlink" href="https://www.aura.build" target="_blank" rel="noopener">Aura ↗</a>
+      <div class="theme" role="group" aria-label="Colour theme">
+        <button type="button" data-theme="light" aria-pressed="false" title="Light" aria-label="Light theme">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.4 4.4l1.6 1.6M18 18l1.6 1.6M2.6 12h2.2M19.2 12h2.2M4.4 19.6L6 18M18 6l1.6-1.6"/></svg>
+        </button>
+        <button type="button" data-theme="dark" aria-pressed="false" title="Dark" aria-label="Dark theme">
+          <svg viewBox="0 0 24 24"><path d="M20.2 14.4A8.4 8.4 0 019.6 3.8a8.4 8.4 0 1010.6 10.6z"/></svg>
+        </button>
+        <button type="button" data-theme="system" aria-pressed="false" title="System" aria-label="Follow system theme">
+          <svg viewBox="0 0 24 24"><rect x="2.8" y="4.2" width="18.4" height="12.4" rx="1.8"/><path d="M8.4 20.4h7.2M12 16.6v3.8"/></svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- PROJECT -->
+  <section class="project" id="project">
+    <div class="head">
+      <h2>Project<span class="stop">.</span></h2>
+      <span>fills every prompt below · saved in this browser only</span>
+      <button class="ghost" id="clearBtn" type="button">Clear project</button>
+    </div>
+    <div class="fields">
+      <div class="f-name"><label for="f-client">Client / project name</label><input id="f-client" data-k="client" placeholder="Northlight Physiotherapy"></div>
+      <div class="f-niche"><label for="f-niche">Niche / what they do</label><input id="f-niche" data-k="niche" placeholder="boutique physiotherapy clinic"></div>
+      <div><label for="f-kind">Kind</label>
+        <select id="f-kind" data-k="kind"><option value="client website">client website</option><option value="own venture">own venture</option></select></div>
+      <div><label for="f-deadline">Deadline</label><input id="f-deadline" data-k="deadline" placeholder="14 Sep"></div>
+    </div>
+  </section>
+
+  <!-- PHASE 0 -->
+  <section class="phase">
+    <div class="ph-open"><span class="ph-eyebrow">00 · Research</span><span class="rule"></span></div>
+    <div class="ph-card">
+      <div class="ph-top"><h3>Scout the niche<span class="stop">.</span></h3><span class="ph-tag">shadow-scout</span><span class="ph-tag auto">I do the work</span></div>
+      <p class="ph-what">Research <b>before</b> anything is built: who the competitors are, which niche clichés to ban, which reference sites are worth stealing patterns from. Output lands in <b>research/SCOUT.md</b> and feeds the brief. Skip only if you already know the space cold.</p>
+      <div class="ph-body">
+        <div class="row">
+          <div><label for="s-comp">Known competitors <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="s-comp" data-k="competitors" placeholder="clinicone.com, movewell.co"></div>
+          <div><label for="s-loc">Location <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="s-loc" data-k="location" placeholder="Lisbon, PT"></div>
+        </div>
+        <div class="prompt" id="p-scout"></div>
+        <div class="p-actions"><button class="copy" data-copy="p-scout" type="button"><span class="dot"></span><span class="txt">Copy prompt</span></button>
+          <span class="hint">paste it into Claude Code — the research runs there</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHASE 1 -->
+  <section class="phase">
+    <div class="ph-open"><span class="ph-eyebrow">01 · Kickoff</span><span class="rule"></span></div>
+    <div class="ph-card">
+      <div class="ph-top"><h3>Kick off the build<span class="stop">.</span></h3><span class="ph-tag">/website-jam · INIT</span></div>
+      <p class="ph-what">One prompt starts everything: the workspace gets scaffolded, <b>PROJECT_BRIEF.md</b> is written from your answers, the stack is wired and smooth scroll mounted. Attach what you have — logo, brand PDF, copy doc — to the same message.</p>
+      <div class="ph-body">
+        <div>
+          <label>Assets — one per row <span style="text-transform:none;letter-spacing:0">(links, hexes, notes; leave empty for "none")</span></label>
+          <div class="list" id="list-assets"></div>
+          <button class="add" type="button" data-add="assets">＋ add another asset</button>
+        </div>
+        <div class="prompt" id="p-init"></div>
+        <div class="p-actions"><button class="copy" data-copy="p-init" type="button"><span class="dot"></span><span class="txt">Copy prompt</span></button>
+          <span class="hint">actual FILES can't attach here — drop them into the chat next to the pasted prompt. Everything supplied gets locked as brand truth.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHASE 2 -->
+  <section class="phase">
+    <div class="ph-open"><span class="ph-eyebrow">02 · Direction</span><span class="rule"></span></div>
+    <div class="ph-card">
+      <div class="ph-top"><h3>Design direction<span class="stop">.</span></h3><span class="ph-tag">visual brief</span></div>
+      <p class="ph-what">Where the look gets decided — <b>before</b> any pattern is composed. Client assets are locked first; a shared design link becomes the <b>visual brief</b>; a registry look can serve as the skeleton (<a data-nav="templates" href="#" target="_blank" rel="noopener">browse them visually ↗</a>). Mixing two looks beats cloning one.</p>
+      <div class="ph-body">
+        <div>
+          <label>Design URLs — one per row <span style="text-transform:none;letter-spacing:0">(any artifact or live site — optional; first = primary brief)</span></label>
+          <div class="list" id="list-designUrls"></div>
+          <button class="add" type="button" data-add="designUrls">＋ add another URL</button>
+        </div>
+        <div class="row">
+          <div><label for="d-look">Registry look(s) <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+            <input id="d-look" data-k="look" placeholder="READER, or READER + GLASSHOUSE"></div>
+          <label class="check" style="align-self:end;padding-bottom:10px"><input type="checkbox" id="d-clone" data-k="clone">
+            <span><b>Clone mode</b> — match the primary design URL exactly (partial scope? say it in chat)</span></label>
+        </div>
+        <div class="prompt" id="p-design"></div>
+        <div class="p-actions"><button class="copy" data-copy="p-design" type="button"><span class="dot"></span><span class="txt">Copy prompt</span></button>
+          <span class="hint">no URL, no look? skip — INIT runs this gate anyway and proposes a menu</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHASE 3 -->
+  <section class="phase">
+    <div class="ph-open"><span class="ph-eyebrow">03 · Compose</span><span class="rule"></span></div>
+    <div class="ph-card">
+      <div class="ph-top"><h3>Browse &amp; pick components<span class="stop">.</span></h3><span class="ph-tag">library</span></div>
+      <p class="ph-what">Open the <a data-nav="library" href="#" target="_blank" rel="noopener">component library ↗</a> — <b data-count="components">…</b> components with live previews. On any card hit <b>⧉ Ref</b>, come back, paste. It gets composed into the project with the locked brand tokens. Sourcing order runs silently: <b>your kit → the project's own components → shadcn/ui → 21st.dev</b> — you never install anything yourself.</p>
+      <div class="ph-body">
+        <div><label for="b-refs">Paste your ⧉ Refs here to build one prompt <span style="text-transform:none;letter-spacing:0">(one per line, optional)</span></label>
+          <textarea id="b-refs" data-k="refs" rows="3" placeholder="timeline | install: … | import: …"></textarea></div>
+        <div class="prompt" id="p-browse"></div>
+        <div class="p-actions"><button class="copy" data-copy="p-browse" type="button"><span class="dot"></span><span class="txt">Copy prompt</span></button>
+          <span class="hint">or just paste refs straight into chat — same thing</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHASE 4 -->
+  <section class="phase">
+    <div class="ph-open"><span class="ph-eyebrow">04 · Build out</span><span class="rule"></span></div>
+    <div class="ph-card">
+      <div class="ph-top"><h3>Add a page or section<span class="stop">.</span></h3><span class="ph-tag">/website-jam · BROWSE+ADD</span></div>
+      <p class="ph-what">Mid-build workhorse. Name the section; you get 2–3 patterns that fit the conversion skeleton, you pick, it gets built with real copy. Repeat until the site is whole.</p>
+      <div class="ph-body">
+        <div><label for="a-section">What to add</label><input id="a-section" data-k="section" placeholder="testimonials section with photos, pricing table, FAQ…"></div>
+        <div class="prompt" id="p-add"></div>
+        <div class="p-actions"><button class="copy" data-copy="p-add" type="button"><span class="dot"></span><span class="txt">Copy prompt</span></button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHASE 5 -->
+  <section class="phase">
+    <div class="ph-open"><span class="ph-eyebrow">05 · Verify</span><span class="rule"></span></div>
+    <div class="ph-card">
+      <div class="ph-top"><h3>QA gate<span class="stop">.</span></h3><span class="ph-tag acc">unskippable</span></div>
+      <p class="ph-what">Every CSS/visual change passes through real browser screenshots — rest, hover, mobile — saved to <b>qa/&lt;today&gt;/</b>, plus a design audit. No screenshots, no "done". This is what keeps builds honest.</p>
+      <div class="ph-body">
+        <div class="prompt" id="p-qa"></div>
+        <div class="p-actions"><button class="copy" data-copy="p-qa" type="button"><span class="dot"></span><span class="txt">Copy prompt</span></button>
+          <span class="hint">runs automatically on any "this is finished" claim — this forces it on demand</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHASE 6 -->
+  <section class="phase">
+    <div class="ph-open"><span class="ph-eyebrow">06 · Handoff</span><span class="rule"></span></div>
+    <div class="ph-card">
+      <div class="ph-top"><h3>Handoff<span class="stop">.</span></h3><span class="ph-tag">/website-jam · HANDOFF</span></div>
+      <p class="ph-what">The PR gets drafted or updated — summary, test plan, QA screenshots, preview link slot. <b>The client and reviewer never get pinged automatically</b>; you decide when and how the link goes out. Production deploys for client work stay yours too.</p>
+      <div class="ph-body">
+        <div class="prompt" id="p-handoff"></div>
+        <div class="p-actions"><button class="copy" data-copy="p-handoff" type="button"><span class="dot"></span><span class="txt">Copy prompt</span></button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHASE 7 -->
+  <section class="phase">
+    <div class="ph-open"><span class="ph-eyebrow">07 · Close out</span><span class="rule"></span></div>
+    <div class="ph-card">
+      <div class="ph-top"><h3>Postmortem<span class="stop">.</span></h3><span class="ph-tag">memory + promotion</span></div>
+      <p class="ph-what">After ship: project memory gets updated, and any pattern used on 3+ projects gets promoted into your own kit as an owned primitive — the system compounds with every build.</p>
+      <div class="ph-body">
+        <div class="prompt" id="p-post"></div>
+        <div class="p-actions"><button class="copy" data-copy="p-post" type="button"><span class="dot"></span><span class="txt">Copy prompt</span></button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIBRARIES -->
+  <section class="libs">
+    <h2>The library shelf<span class="stop">.</span></h2>
+    <p class="sub">everything the build pulls from — one home each, no duplicates</p>
+    <div class="libgrid">
+      <a class="lib" data-nav="library" href="#" target="_blank" rel="noopener">
+        <div class="name"><span class="dot" style="background:var(--sunrise)"></span>Component library</div>
+        <p>Your own catalog — <b data-count="components">…</b> components and <b data-count="templates">…</b> site templates with visual style tiles and live previews. The first and main stop; everything below is already indexed inside it.</p>
+        <div class="role">home base · browse + ⧉ ref</div>
+      </a>
+      <a class="lib" href="https://21st.dev" target="_blank" rel="noopener">
+        <div class="name"><span class="dot" style="background:var(--ext)"></span>21st.dev</div>
+        <p>Community registry + AI. Semantic search from inside chat ("magnetic bento with spotlight"), SVG logo search, variant generation. Fills gaps the kit doesn't cover — installs on demand, $0.</p>
+        <div class="role">gap filler · in-chat search &amp; generate</div>
+      </a>
+      <div class="lib" style="cursor:default">
+        <div class="name"><span class="dot" style="background:var(--pro)"></span>Inspiration quarries</div>
+        <p><a href="https://osmo.supply" target="_blank" rel="noopener">Osmo</a> (interactions) · <a href="https://www.aura.build" target="_blank" rel="noopener">Aura community</a> (whole-page looks) · <a href="https://satus.darkroom.engineering" target="_blank" rel="noopener">Satus</a> (engineering patterns). Never copied directly: techniques get re-implemented as your own. Used twice → owned primitive.</p>
+        <div class="role">inspiration only · never copy source</div>
+      </div>
+      <div class="lib" style="cursor:default">
+        <div class="name"><span class="dot" style="background:var(--ok)"></span>Inside the catalog</div>
+        <p>Aceternity UI, Magic UI, Motion-Primitives, prompt-kit, <b>React Bits</b> (WebGL shader heroes) and the kit's own <b>3D rail</b> (Scene3D · R3F) — every one indexed and previewed in the library, installed from its own source. Green = installed, blue = free external, brass = pro/link.</p>
+        <div class="role">no separate visit needed</div>
+      </div>
+      <a class="lib" href="https://creator.lottiefiles.com" target="_blank" rel="noopener">
+        <div class="name"><span class="dot" style="background:var(--ext)"></span>Lottie Creator</div>
+        <p>Authored animation assets — animated logos, mascots, illustrated loaders. Authored conversationally, exported as Lottie JSON, rendered through a player component. One per page; the asset must BE the signature.</p>
+        <div class="role">authoring tool · animated brand moments</div>
+      </a>
+      <div class="lib pending" style="cursor:default">
+        <div class="name">＋ Found something new?</div>
+        <p>Drop the link here — the button builds the analysis prompt. It gets rated (what it adds, what it duplicates, keep-or-skip) before it earns a card. That rule keeps this shelf short.</p>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:9px">
+          <input id="n-lib" data-k="newLib" placeholder="https://the-library-you-found.com">
+          <div class="prompt" id="p-newlib" style="font-size:11.5px"></div>
+          <div class="p-actions"><button class="copy" data-copy="p-newlib" type="button"><span class="dot"></span><span class="txt">Copy prompt</span></button></div>
+        </div>
+        <div class="role">review gate · no duplicates</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rules">
+    <span><b>Hard rules:</b></span>
+    <span>never auto-ping clients</span><span class="sep">·</span>
+    <span>never deploy production for client work</span><span class="sep">·</span>
+    <span>never skip the QA gate on CSS changes</span><span class="sep">·</span>
+    <span>client assets always outrank tool suggestions</span>
+  </div>
+  <p class="colophon">Mission Control for <a href="https://github.com/TheShadowLeader/website-jam">website-jam</a> — built by <a href="https://theshadowlegacy.com">The Shadow Legacy</a><span class="stop">.</span></p>
+</main>
+
+<script>
+(function(){
+  /* ─────────────────────────────────────────────────────────────────
+     CONFIG — the only block worth editing. Point it at your own
+     library, or leave the defaults if you have none yet.
+     ───────────────────────────────────────────────────────────────── */
+  var CONFIG = {
+    libraryUrl:   'https://shadow-library.vercel.app/gallery',
+    templatesUrl: 'https://shadow-library.vercel.app/c/site-templates',
+    // Optional: a JSON endpoint like {"components":281,"templates":19}. Left off
+    // by default so the page makes no network request; set it to your own and the
+    // numbers below stop being something you have to remember to update.
+    countsUrl:    null,
+    // used as-is while countsUrl is null
+    counts: { components: 281, templates: 19 }
+  };
+
+  /* ── theme: light | dark | system, same key as the site ────────── */
+  var TKEY='tsl-theme';
+  var mq=matchMedia('(prefers-color-scheme:dark)');
+  function readTheme(){try{return localStorage.getItem(TKEY)||'system'}catch(e){return 'system'}}
+  function applyTheme(t){
+    var dark = t==='dark' || (t==='system' && mq.matches);
+    document.documentElement.classList.toggle('dark', dark);
+    document.querySelectorAll('.theme button').forEach(function(b){
+      b.setAttribute('aria-pressed', String(b.dataset.theme===t));
+    });
+  }
+  document.querySelectorAll('.theme button').forEach(function(b){
+    b.addEventListener('click',function(){
+      var t=b.dataset.theme;
+      try{localStorage.setItem(TKEY,t)}catch(e){}
+      applyTheme(t);
+    });
+  });
+  mq.addEventListener('change',function(){ if(readTheme()==='system') applyTheme('system'); });
+  applyTheme(readTheme());
+
+  /* ── wire configured links + live counts ───────────────────────── */
+  document.querySelectorAll('[data-nav="library"]').forEach(function(a){a.href=CONFIG.libraryUrl});
+  document.querySelectorAll('[data-nav="templates"]').forEach(function(a){a.href=CONFIG.templatesUrl});
+  function paintCounts(c){
+    Object.keys(c).forEach(function(k){
+      document.querySelectorAll('[data-count="'+k+'"]').forEach(function(el){el.textContent=c[k]});
+    });
+  }
+  paintCounts(CONFIG.counts);
+  if(CONFIG.countsUrl){
+    fetch(CONFIG.countsUrl,{cache:'no-store'})
+      .then(function(r){return r.ok?r.json():null})
+      .then(function(j){ if(j){ CONFIG.counts=j; paintCounts(j); render(); } })
+      .catch(function(){/* offline or file:// — the constants above stand */});
+  }
+
+  /* ── project state ─────────────────────────────────────────────── */
+  var KEY='jam-dashboard';
+  var state={};
+  try{state=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  var els=document.querySelectorAll('[data-k]');
+  els.forEach(function(el){
+    var k=el.dataset.k;
+    if(el.type==='checkbox'){el.checked=!!state[k];}
+    else if(state[k]!=null){el.value=state[k];}
+    el.addEventListener('input',function(){
+      state[k]=el.type==='checkbox'?el.checked:el.value;
+      localStorage.setItem(KEY,JSON.stringify(state));
+      render();
+    });
+  });
+
+  var LISTS={assets:'logo SVG link, #1A2B3C, copy doc — or a note',designUrls:'https://…  a design artifact or a live site'};
+  function drawList(key){
+    var box=document.getElementById('list-'+key);
+    var arr=state[key];
+    if(!Array.isArray(arr)||!arr.length)arr=[''];
+    state[key]=arr;
+    box.innerHTML='';
+    arr.forEach(function(val,i){
+      var row=document.createElement('div');row.className='li';
+      var inp=document.createElement('input');inp.value=val;inp.placeholder=LISTS[key];
+      inp.setAttribute('aria-label',key+' '+(i+1));
+      inp.addEventListener('input',function(){state[key][i]=inp.value;save();render();});
+      row.appendChild(inp);
+      if(arr.length>1){
+        var rm=document.createElement('button');rm.className='rm';rm.type='button';rm.textContent='×';
+        rm.title='remove';rm.setAttribute('aria-label','Remove row '+(i+1));
+        rm.addEventListener('click',function(){state[key].splice(i,1);save();drawList(key);render();});
+        row.appendChild(rm);
+      }
+      box.appendChild(row);
+    });
+  }
+  function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+  document.querySelectorAll('.add').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var k=btn.dataset.add;
+      (state[k]=state[k]||['']).push('');
+      save();drawList(k);
+    });
+  });
+  Object.keys(LISTS).forEach(drawList);
+
+  document.getElementById('clearBtn').addEventListener('click',function(){
+    if(!confirm('Clear all project fields?'))return;
+    state={};localStorage.removeItem(KEY);
+    els.forEach(function(el){if(el.type==='checkbox'){el.checked=false}else{el.value=''}});
+    Object.keys(LISTS).forEach(drawList);
+    render();
+  });
+
+  function v(k,fallback){var x=(typeof state[k]==='string'?state[k]:'').trim();return x||fallback||'';}
+  function has(k){return typeof state[k]==='string'&&!!state[k].trim();}
+  function list(k){return (state[k]||[]).map(function(s){return (s||'').trim()}).filter(Boolean);}
+
+  function render(){
+    var client=v('client','<client>');
+    var niche=v('niche','<niche>');
+    var kind=v('kind','client website');
+
+    var scout='Run shadow-scout for '+client+' — niche: '+niche+'.';
+    if(has('location'))scout+=' Location: '+v('location')+'.';
+    if(has('competitors'))scout+=' Known competitors: '+v('competitors')+'.';
+    scout+='\nOutput research/SCOUT.md, then hold for my go on the build.';
+    set('p-scout',scout);
+
+    var assets=list('assets');
+    var urls=list('designUrls');
+
+    var init='/website-jam — new '+kind+' for '+client+'. Niche: '+niche+'.';
+    if(has('deadline'))init+=' Deadline: '+v('deadline')+'.';
+    init+='\nAssets:'+(assets.length?'\n- '+assets.join('\n- '):' none — brand-on-the-fly, propose a direction.');
+    if(urls.length)init+='\nVisual brief'+(urls.length>1?'s':'')+': '+urls.join(' , ')+(state.clone?' — CLONE MODE: match the first faithfully.':' — extract direction before shaping.');
+    init+='\nRun INIT: brief, scaffold, locks. Present the plan before building.';
+    set('p-init',init);
+
+    var d='';
+    if(urls.length){
+      d='Visual brief'+(urls.length>1?'s':'')+' for '+client+':\n- '+urls.join('\n- ')+'\n'+(state.clone
+        ?'CLONE MODE — reproduce the FIRST faithfully (tell me in chat if only part of it); the rest are references. Re-wire values to tokens, keep reduced-motion + QA gate.'
+        :'Extract layout archetype, palette, type roles and signature moments — direction, not markup. Multiple links = mine each, tell me what you took from which. Then shape the design with these as the brief.');
+      if(has('look'))d+='\nSkeleton look(s): '+v('look')+' — re-tokenized, never shipped with placeholder colors.';
+    }else if(has('look')){
+      d='Design direction for '+client+': use '+v('look')+' as the skeleton look(s) — re-tokenize to the brand, then shape the gaps.';
+    }else{
+      d='Design direction for '+client+': no visual brief — read the registry, propose 2–4 best-fit looks as a menu with one-line "why it fits", then shape after I pick.';
+    }
+    set('p-design',d);
+
+    var refs=(state.refs||'').trim();
+    var b=refs
+      ?'Compose these into '+client+' with the locked brand tokens + real copy (your kit \u2192 the project\u2019s own components \u2192 shadcn/ui \u2192 21st.dev, for anything missing):\n'+refs
+      :'Open the library for me and propose components for the next section of '+client+' — 2–3 options each, kit-first.';
+    set('p-browse',b);
+
+    set('p-add','/website-jam — add to '+client+': '+v('section','<what to add>')+'. Propose 2–3 patterns first, build after I pick. QA gate applies.');
+    set('p-qa','/website-jam — run the full QA gate on '+client+' now: dev server up, real browser screenshots (rest / hover / mobile) into qa/<today>/, plus the design audit. Show me the evidence.');
+    set('p-handoff','/website-jam — HANDOFF for '+client+': draft/update the PR with summary, test plan and QA screenshots. Do NOT ping anyone; the link stays with me.');
+    set('p-post','/website-jam — POSTMORTEM for '+client+': update project memory, list patterns used across 3+ projects and propose which to promote into the kit.');
+
+    set('p-newlib','Analyze this library for my website stack: '+v('newLib','<paste URL above>')
+      +'\nRate it /10 against what I already have ('+CONFIG.counts.components+' catalogued components, 21st.dev, Aceternity, MagicUI, Motion-Primitives, prompt-kit; Osmo/Aura/Satus as quarries). What does it ADD, what does it DUPLICATE, keep-or-skip verdict with reasons. If keep: where does it slot (shelf card, catalog entries, or quarry)?');
+  }
+  function set(id,text){var el=document.getElementById(id);if(el)el.textContent=text;}
+
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var t=document.getElementById(btn.dataset.copy).textContent;
+      var lbl=btn.querySelector('.txt');
+      navigator.clipboard.writeText(t).then(function(){
+        var old=lbl.textContent;lbl.textContent='✓ Copied';btn.classList.add('ok');
+        setTimeout(function(){lbl.textContent=old;btn.classList.remove('ok')},1300);
+      });
+    });
+  });
+  render();
+})();
+</script>
+</body>
+</html>
